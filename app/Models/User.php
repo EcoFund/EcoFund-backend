@@ -11,6 +11,12 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable; // ✅ TAMBAH DI SINI
 
+    protected $primaryKey = 'id_user';
+
+    public $incrementing = true;
+
+    protected $keyType = 'int';
+
     protected $fillable = [
         'nama',
         'email',

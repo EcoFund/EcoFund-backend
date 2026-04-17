@@ -47,7 +47,7 @@ class AuthController extends Controller
         $request->validate([
             'nama'                  => 'required|string|max:255',
             'email'                 => 'required|email|unique:users,email',
-            'no_hp'                 => 'required|string|max:20',
+            'no_hp'                 => 'required|string|max:15',
             'password'              => 'required|string|min:8|confirmed',
             'foto'                 => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
         ]);
@@ -174,7 +174,7 @@ class AuthController extends Controller
 
         $request->validate([
             'nama'  => 'sometimes|string|max:255',
-            'no_hp' => 'sometimes|string|max:20',
+            'no_hp' => 'sometimes|string|max:15',
             'foto' => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
         ]);
 
