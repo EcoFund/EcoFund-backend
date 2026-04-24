@@ -1,27 +1,58 @@
 <?php
 
 namespace App\Models;
- 
+
 use Illuminate\Database\Eloquent\Model;
- 
+
 class Campaign extends Model
 {
+    protected $table = 'campaigns';
+
+    protected $primaryKey = 'id_campaign';
+
+    public $incrementing = true;
+
+    protected $keyType = 'int';
+
     protected $fillable = [
-        'user_id', 'title', 'slug', 'description',
-        'category', 'goal_amount', 'deadline', 'image', 'status',
+        'id_user',
+        'kategori_id',
+        'identities',
+        'judul',
+        'slug',
+        'deskripsi',
+        'target_donasi',
+        'dana_terkumpul',
+        'lokasi',
+        'gambar',
+        'payment_method',
+        'supporting_document',
+        'status',
+        'tanggal_mulai',
+        'tanggal_selesai',
     ];
- 
-    protected $casts = ['deadline' => 'date', 'goal_amount' => 'decimal:2'];
- 
-    public function user()       { return $this->belongsTo(User::class); }
-    public function donations()  { return $this->hasMany(Donation::class); }
- 
-    // Accessor: persentase terkumpul
+
+    protected $casts = [
+        'target_donasi' => 'integer',
+        'dana_terkumpul' => 'integer',
+        'tanggal_mulai' => 'date',
+        'tanggal_selesai' => 'date',
+    ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'id_user', 'id_user');
+    }
+
+    public function donations()
+    {
+        return $this->hasMany(Donation::class, 'id_campaign', 'id_campaign');
+    }
+
     public function getPercentageAttribute(): int
     {
-        $raised = $this->donations()->where('status', 'paid')->sum('amount');
-        return $this->goal_amount > 0
-            ? (int) min(100, round(($raised / $this->goal_amount) * 100))
+        return $this->target_donasi > 0
+            ? (int) min(100, round(($this->dana_terkumpul / $this->target_donasi) * 100))
             : 0;
     }
 }

@@ -116,6 +116,102 @@
                     }
                 }
             }
+        },
+        "/campaigns": {
+            "post": {
+                "tags": [
+                    "Campaigns"
+                ],
+                "summary": "Buat campaign baru",
+                "operationId": "createCampaign",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "kategori_id",
+                                    "identities",
+                                    "judul",
+                                    "deskripsi",
+                                    "target_donasi",
+                                    "payment_method"
+                                ],
+                                "properties": {
+                                    "kategori_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "identities": {
+                                        "type": "string",
+                                        "example": "other_people_or_community",
+                                        "enum": [
+                                            "for_yourself",
+                                            "organization_or_company",
+                                            "other_people_or_community"
+                                        ]
+                                    },
+                                    "judul": {
+                                        "type": "string",
+                                        "example": "Bantu Renovasi Sekolah"
+                                    },
+                                    "deskripsi": {
+                                        "type": "string",
+                                        "example": "Penggalangan dana untuk renovasi sekolah desa."
+                                    },
+                                    "target_donasi": {
+                                        "type": "integer",
+                                        "example": 50000000
+                                    },
+                                    "lokasi": {
+                                        "type": "string",
+                                        "example": "Bandung"
+                                    },
+                                    "payment_method": {
+                                        "type": "string",
+                                        "example": "bank_transfer"
+                                    },
+                                    "gambar": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "supporting_document": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "tanggal_mulai": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2026-04-24"
+                                    },
+                                    "tanggal_selesai": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2026-05-30"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Campaign berhasil dibuat"
+                    },
+                    "401": {
+                        "description": "Belum login"
+                    },
+                    "422": {
+                        "description": "Validasi gagal"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
         }
     },
     "components": {
@@ -132,6 +228,10 @@
         {
             "name": "Auth",
             "description": "Auth"
+        },
+        {
+            "name": "Campaigns",
+            "description": "Campaigns"
         }
     ]
 }

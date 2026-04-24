@@ -10,8 +10,7 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
-    // â”€â”€ Ringkasan dashboard fundraiser â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    public function index(Request $request)
+       public function index(Request $request)
     {
         $userId = $request->user()->id;
 
@@ -94,8 +93,7 @@ class DashboardController extends Controller
         ]);
     }
 
-    // â”€â”€ Activity feed â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    public function activity(Request $request)
+        public function activity(Request $request)
     {
         $userId = $request->user()->id;
         $campaignIds = Campaign::where('user_id', $userId)->pluck('id');
