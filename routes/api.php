@@ -11,6 +11,11 @@ Route::prefix('auth')->group(function () {
     Route::post('register', [AuthController::class, 'register']);
     Route::post('login',    [AuthController::class, 'login']);
 });
+
+Route::middleware('auth:sanctum')->get(
+    'campaigns/my',
+    [CampaignController::class, 'myCampaigns']
+);
  
 // ── Campaign & donasi publik ───────────────────────────────────────────
 Route::prefix('campaigns')->group(function () {
@@ -36,7 +41,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('dashboard/activity', [DashboardController::class, 'activity']);
  
     Route::prefix('campaigns')->group(function () {
-        Route::get('my',                   [CampaignController::class, 'myCampaigns']);
         Route::post('/',                   [CampaignController::class, 'store']);
         Route::post('{campaign}',          [CampaignController::class, 'update']);
         Route::delete('{campaign}',        [CampaignController::class, 'destroy']);

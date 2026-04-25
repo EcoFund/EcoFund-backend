@@ -87,7 +87,7 @@ class CampaignController extends Controller
     {
         $request->validate([
             'kategori_id' => 'required|exists:kategori,id_kategori',
-            'identities' => 'required|in:individual,organization,community',
+            'identities' => 'required|in:for_yourself,organization_or_company,other_people_or_community',
             'judul' => 'required|string|max:255',
             'deskripsi' => 'required|string',
             'target_donasi' => 'required|numeric|min:10000',
@@ -135,6 +135,8 @@ class CampaignController extends Controller
 
     public function update(Request $request, Campaign $campaign)
     {
+        dd($request->all());
+
         $request->validate([
             'kategori_id' => 'sometimes|exists:kategori,id_kategori',
             'identities' => 'sometimes|in:for_yourself,organization_or_company,other_people_or_community',
@@ -205,13 +207,16 @@ class CampaignController extends Controller
     }
 
     public function myCampaigns(Request $request)
-    {
-        $campaigns = Campaign::where('id_user', $request->user()->getKey())
-            ->latest()
-            ->get();
+{
+    $campaigns = Campaign::where(
+        'id_user',
+        $request->user()->getKey()
+    )
+    ->latest()
+    ->get();
 
-        return response()->json($campaigns);
-    }
+    return response()->json($campaigns);
+}
 
     public function categories()
     {
