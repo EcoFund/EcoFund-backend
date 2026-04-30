@@ -8,9 +8,9 @@ use App\Models\Donation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
-class DashboardController extends Controller
+class AdminController extends Controller
 {
-       public function index(Request $request)
+    public function index(Request $request)
     {
         $userId = $request->user()->id;
 
@@ -57,7 +57,7 @@ class DashboardController extends Controller
 
         // Kampanye milik user dengan progress
         $myCampaigns = Campaign::where('user_id', $userId)
-            ->withSum(['donations' => fn ($q) => $q->where('status', 'paid')], 'amount')
+            ->withSum(['donations' => fn($q) => $q->where('status', 'paid')], 'amount')
             ->withCount('donations')
             ->latest()
             ->get()
@@ -82,18 +82,18 @@ class DashboardController extends Controller
 
         return response()->json([
             'stats' => [
-                'total_donations'  => $totalDonations,
+                'total_donations' => $totalDonations,
                 'active_campaigns' => $activeCampaigns,
-                'total_donors'     => $totalDonors,
-                'fund_disbursed'   => $fundDisbursed,
+                'total_donors' => $totalDonors,
+                'fund_disbursed' => $fundDisbursed,
             ],
             'recent_donations' => $recentDonations,
-            'my_campaigns'     => $myCampaigns,
-            'chart_data'       => $chartData,
+            'my_campaigns' => $myCampaigns,
+            'chart_data' => $chartData,
         ]);
     }
 
-        public function activity(Request $request)
+    public function activity(Request $request)
     {
         $userId = $request->user()->id;
         $campaignIds = Campaign::where('user_id', $userId)->pluck('id');
@@ -105,26 +105,26 @@ class DashboardController extends Controller
             ->latest()
             ->limit(10)
             ->get()
-            ->map(fn ($d) => [
-                'type'    => 'donation',
-                'icon'    => 'ðŸ’š',
+            ->map(fn($d) => [
+                'type' => 'donation',
+                'icon' => 'ðŸ’š',
                 'message' => ($d->anonymous ? 'Anonim' : $d->user->name)
                     . ' berdonasi Rp ' . number_format($d->amount, 0, ',', '.')
                     . ' ke ' . $d->campaign->title,
-                'time'    => $d->created_at->diffForHumans(),
-                'read'    => false,
+                'time' => $d->created_at->diffForHumans(),
+                'read' => false,
             ]);
 
         $milestones = Campaign::where('user_id', $userId)
             ->where('updated_at', '>=', now()->subDays(30))
             ->whereIn('status', ['completed', 'active'])
             ->get()
-            ->map(fn ($c) => [
-                'type'    => 'milestone',
-                'icon'    => 'ðŸ“£',
+            ->map(fn($c) => [
+                'type' => 'milestone',
+                'icon' => 'ðŸ“£',
                 'message' => 'Kampanye "' . $c->title . '" mencapai status ' . $c->status,
-                'time'    => $c->updated_at->diffForHumans(),
-                'read'    => true,
+                'time' => $c->updated_at->diffForHumans(),
+                'read' => true,
             ]);
 
         $activities = collect($donations)

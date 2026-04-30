@@ -37,9 +37,14 @@ class CampaignController extends Controller
         return response()->json($query->paginate($request->get('per_page', 9)));
     }
 
+    public function getRouteKeyName()
+    {
+        return 'slug';
+    }
+
     public function show(Campaign $campaign)
     {
-        $campaign->load('user:id_user,nama,foto,role');
+        $campaign->load('user:id_user,nama,email,no_hp,foto,role', 'kategori:id_kategori,nama_kategori');
 
         return response()->json($campaign);
     }
@@ -191,6 +196,39 @@ class CampaignController extends Controller
         ]);
     }
 
+    public function approve(Campaign $campaign)
+    {
+        $campaign->update([
+            'status' => 'aktif',
+            'reason' => null,
+        ]);
+
+        return response()->json([
+            'message' => 'Kampanye berhasil di-approve.',
+            'campaign' => $campaign,
+        ]);
+    }
+
+    public function reject(Request $request, Campaign $campaign)
+    {
+        $request->validate([
+            'reason' => 'required|string|min:10',
+        ], [
+            'reason.required' => 'Alasan penolakan wajib diisi.',
+            'reason.min'      => 'Alasan penolakan minimal 10 karakter.',
+        ]);
+
+        $campaign->update([
+            'status' => 'ditolak',
+            'reason' => $request->reason,
+        ]);
+
+        return response()->json([
+            'message' => 'Kampanye berhasil ditolak.',
+            'campaign' => $campaign,
+        ]);
+    }
+
     public function destroy(Campaign $campaign)
     {
         if ($campaign->gambar) {
@@ -207,16 +245,16 @@ class CampaignController extends Controller
     }
 
     public function myCampaigns(Request $request)
-{
-    $campaigns = Campaign::where(
-        'id_user',
-        $request->user()->getKey()
-    )
-    ->latest()
-    ->get();
+    {
+        $campaigns = Campaign::where(
+            'id_user',
+            $request->user()->getKey()
+        )
+            ->latest()
+            ->get();
 
-    return response()->json($campaigns);
-}
+        return response()->json($campaigns);
+    }
 
     public function categories()
     {

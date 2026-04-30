@@ -28,6 +28,7 @@ class Campaign extends Model
         'payment_method',
         'supporting_document',
         'status',
+        'reason',
         'tanggal_mulai',
         'tanggal_selesai',
     ];
@@ -44,6 +45,11 @@ class Campaign extends Model
         return $this->belongsTo(User::class, 'id_user', 'id_user');
     }
 
+    public function kategori()
+    {
+        return $this->belongsTo(\App\Models\Kategori::class, 'kategori_id', 'id_kategori');
+    }
+
     public function donations()
     {
         return $this->hasMany(Donation::class, 'id_campaign', 'id_campaign');
@@ -54,5 +60,10 @@ class Campaign extends Model
         return $this->target_donasi > 0
             ? (int) min(100, round(($this->dana_terkumpul / $this->target_donasi) * 100))
             : 0;
+    }
+
+    public function getRouteKeyName()
+    {
+        return 'slug';
     }
 }
