@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -148,6 +149,75 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Login berhasil.',
+            'user'    => $user,
+            'token'   => $token,
+        ]);
+    }
+
+    // ── Google OAuth ──────────────────────────────────────
+    public function googleAuth(Request $request)
+    {
+        $request->validate([
+            'credential' => 'required|string',
+        ]);
+
+        // Verifikasi ID token ke Google tokeninfo endpoint
+        // withoutVerifying() hanya aktif di local (XAMPP Windows tidak punya CA bundle)
+        $http = app()->isLocal()
+            ? Http::withoutVerifying()
+            : Http::withOptions([]);
+
+        $response = $http->get('https://oauth2.googleapis.com/tokeninfo', [
+            'id_token' => $request->credential,
+        ]);
+
+        if ($response->failed()) {
+            return response()->json(['message' => 'Token Google tidak valid.'], 401);
+        }
+
+        $payload = $response->json();
+
+        // Validasi audience (client_id) agar token bukan dari aplikasi lain
+        $clientId = config('services.google.client_id');
+        if ($clientId && ($payload['aud'] ?? '') !== $clientId) {
+            return response()->json(['message' => 'Token Google tidak valid untuk aplikasi ini.'], 401);
+        }
+
+        $googleId = $payload['sub'] ?? null;
+        $email    = $payload['email'] ?? null;
+        $nama     = $payload['name'] ?? ($payload['given_name'] ?? 'EcoFund User');
+        $foto     = $payload['picture'] ?? null;
+
+        if (! $googleId || ! $email) {
+            return response()->json(['message' => 'Data Google tidak lengkap.'], 422);
+        }
+
+        // Cari user berdasarkan google_id, lalu email, atau buat baru
+        $user = User::where('google_id', $googleId)->first()
+            ?? User::where('email', $email)->first();
+
+        if ($user) {
+            // Update google_id jika belum tersimpan
+            if (! $user->google_id) {
+                $user->update(['google_id' => $googleId]);
+            }
+        } else {
+            // Buat user baru
+            $user = User::create([
+                'nama'      => $nama,
+                'email'     => $email,
+                'google_id' => $googleId,
+                'foto'      => $foto,          // URL foto Google (bukan path lokal)
+                'role'      => 'campaigner',
+                'password'  => null,
+            ]);
+        }
+
+        Auth::login($user);
+        $token = $user->createToken('ecofund-google')->plainTextToken;
+
+        return response()->json([
+            'message' => 'Login dengan Google berhasil.',
             'user'    => $user,
             'token'   => $token,
         ]);
