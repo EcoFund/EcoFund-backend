@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CampaignController;
+use App\Http\Controllers\Api\CampaignImageController;
+use App\Http\Controllers\Api\CampaignUpdateController;
 use App\Http\Controllers\Api\DonationController;
 use App\Http\Controllers\Api\DashboardController;
 use Illuminate\Support\Facades\Route;
@@ -25,6 +27,10 @@ Route::prefix('campaigns')->group(function () {
     Route::get('categories', [CampaignController::class, 'categories']);
     Route::get('{campaign}', [CampaignController::class, 'show']);
     Route::get('{campaign}/donations', [DonationController::class, 'campaignDonations']);
+
+    // Publik: lihat gambar & update campaign
+    Route::get('{campaign}/images', [CampaignImageController::class, 'index']);
+    Route::get('{campaign}/updates', [CampaignUpdateController::class, 'index']);
 });
 
 // ── Webhook payment (dikecualikan dari CSRF di bootstrap/app.php) ──────
@@ -44,6 +50,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('{campaign}', [CampaignController::class, 'destroy']);
         Route::patch('{campaign}/approve', [CampaignController::class, 'approve']);
         Route::patch('{campaign}/reject', [CampaignController::class, 'reject']);
+
+        // Campaign Images
+        Route::post('{campaign}/images', [CampaignImageController::class, 'store']);
+        Route::delete('{campaign}/images/{image}', [CampaignImageController::class, 'destroy']);
+
+        // Campaign Updates
+        Route::post('{campaign}/updates', [CampaignUpdateController::class, 'store']);
+        Route::put('{campaign}/updates/{update}', [CampaignUpdateController::class, 'update']);
+        Route::delete('{campaign}/updates/{update}', [CampaignUpdateController::class, 'destroy']);
     });
 
     Route::prefix('donations')->group(function () {
