@@ -66,4 +66,14 @@ class Campaign extends Model
     {
         return 'slug';
     }
+
+    public function updates()
+    {
+        return $this->hasMany(CampaignUpdate::class, 'id_campaign', 'id_campaign');
+    }
+
+    public function deleteRequests()
+    {
+        return $this->hasMany(DeleteRequest::class, 'id_campaign', 'id_campaign');
+    }
 }

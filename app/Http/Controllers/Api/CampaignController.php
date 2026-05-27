@@ -140,7 +140,6 @@ class CampaignController extends Controller
 
     public function update(Request $request, Campaign $campaign)
     {
-        dd($request->all());
 
         $request->validate([
             'kategori_id' => 'sometimes|exists:kategori,id_kategori',

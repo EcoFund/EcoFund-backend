@@ -13,12 +13,16 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-    $middleware->validateCsrfTokens(except: [
-        'api/*', 
-    ]);
- 
+        // Enable CORS globally - must be early in the stack
+        
+
+        $middleware->api(prepend: [
+            EnsureFrontendRequestsAreStateful::class,
+        ]);
+
         $middleware->validateCsrfTokens(except: [
-            'api/donations/confirm', // webhook payment gateway, skip CSRF
+            'api/*', 
+            'api/donations/confirm',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

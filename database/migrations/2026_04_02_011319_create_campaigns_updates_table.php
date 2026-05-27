@@ -18,6 +18,7 @@ return new class extends Migration
 
     $table->string('judul');
     $table->text('deskripsi');
+    $table->string('gambar')->nullable();
 
     $table->timestamps();
     });
@@ -28,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('campaigns_updates');
+        Schema::dropIfExists('campaign_updates');
     }
 };

@@ -4,6 +4,8 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CampaignController;
 use App\Http\Controllers\Api\DonationController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\CampaignUpdateController;
+use App\Http\Controllers\Api\DeleteRequestController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -50,4 +52,22 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('campaigns/{campaign}', [DonationController::class, 'store']);
         Route::get('my', [DonationController::class, 'myDonations']);
     });
+});
+
+//public lihat update campaign
+Route::get('campaigns/{campaign}/updates', [CampaignUpdateController::class, 'index']);
+
+// Auth routes
+Route::middleware('auth:sanctum')->group(function () {
+    // Campaign updates (fundraiser)
+    Route::post('campaigns/{campaign}/updates', [CampaignUpdateController::class, 'store']);
+    Route::delete('campaigns/{campaign}/updates/{update}', [CampaignUpdateController::class, 'destroy']);
+
+    // Delete requests (fundraiser)
+    Route::post('campaigns/{campaign}/delete-request', [DeleteRequestController::class, 'store']);
+
+    // Delete requests (admin)
+    Route::get('delete-requests', [DeleteRequestController::class, 'index']);
+    Route::patch('delete-requests/{deleteRequest}/approve', [DeleteRequestController::class, 'approve']);
+    Route::patch('delete-requests/{deleteRequest}/reject', [DeleteRequestController::class, 'reject']);
 });
