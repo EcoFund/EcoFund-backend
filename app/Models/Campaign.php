@@ -55,6 +55,16 @@ class Campaign extends Model
         return $this->hasMany(Donation::class, 'id_campaign', 'id_campaign');
     }
 
+    public function images()
+    {
+        return $this->hasMany(\App\Models\CampaignImage::class, 'id_campaign', 'id_campaign');
+    }
+
+    public function updates()
+    {
+        return $this->hasMany(\App\Models\CampaignUpdate::class, 'id_campaign', 'id_campaign')->latest();
+    }
+
     public function getPercentageAttribute(): int
     {
         return $this->target_donasi > 0
