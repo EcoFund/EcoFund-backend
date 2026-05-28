@@ -28,18 +28,13 @@ class CampaignController extends Controller
             $query->where('status', $request->status);
         }
 
-        $sort = $request->get('sort', 'latest');
+        $sort = $request->input('sort', 'latest');
         match ($sort) {
             'ending' => $query->orderBy('tanggal_selesai'),
             default => $query->latest(),
         };
 
-        return response()->json($query->paginate($request->get('per_page', 9)));
-    }
-
-    public function getRouteKeyName()
-    {
-        return 'slug';
+        return response()->json($query->paginate($request->input('per_page', 9)));
     }
 
     public function show(Campaign $campaign)
@@ -140,7 +135,6 @@ class CampaignController extends Controller
 
     public function update(Request $request, Campaign $campaign)
     {
-
         $request->validate([
             'kategori_id' => 'sometimes|exists:kategori,id_kategori',
             'identities' => 'sometimes|in:for_yourself,organization_or_company,other_people_or_community',
@@ -214,7 +208,7 @@ class CampaignController extends Controller
             'reason' => 'required|string|min:10',
         ], [
             'reason.required' => 'Alasan penolakan wajib diisi.',
-            'reason.min'      => 'Alasan penolakan minimal 10 karakter.',
+            'reason.min' => 'Alasan penolakan minimal 10 karakter.',
         ]);
 
         $campaign->update([
@@ -238,6 +232,23 @@ class CampaignController extends Controller
             Storage::disk('public')->delete($campaign->supporting_document);
         }
 
+        $imagePaths = DB::table('campaign_images')
+            ->where('id_campaign', $campaign->id_campaign)
+            ->pluck('image_url');
+
+        foreach ($imagePaths as $path) {
+            Storage::disk('public')->delete($path);
+        }
+
+        $updateImages = DB::table('campaign_updates')
+            ->where('id_campaign', $campaign->id_campaign)
+            ->whereNotNull('gambar')
+            ->pluck('gambar');
+
+        foreach ($updateImages as $path) {
+            Storage::disk('public')->delete($path);
+        }
+
         $campaign->delete();
 
         return response()->json(['message' => 'Kampanye dihapus.']);
@@ -245,10 +256,7 @@ class CampaignController extends Controller
 
     public function myCampaigns(Request $request)
     {
-        $campaigns = Campaign::where(
-            'id_user',
-            $request->user()->getKey()
-        )
+        $campaigns = Campaign::where('id_user', $request->user()->getKey())
             ->latest()
             ->get();
 
@@ -263,5 +271,175 @@ class CampaignController extends Controller
             ->get();
 
         return response()->json($categories);
+    }
+
+    public function imagesIndex(Campaign $campaign)
+    {
+        $images = DB::table('campaign_images')
+            ->where('id_campaign', $campaign->id_campaign)
+            ->latest()
+            ->get();
+
+        return response()->json($images);
+    }
+
+    public function imagesStore(Request $request, Campaign $campaign)
+    {
+        if ($request->user()->getKey() !== $campaign->id_user) {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+
+        $request->validate([
+            'images' => 'required|array|min:1|max:10',
+            'images.*' => 'required|image|mimes:jpg,jpeg,png,webp|max:5120',
+        ]);
+
+        $saved = [];
+        foreach ($request->file('images') as $file) {
+            $path = $file->store('campaigns/images', 'public');
+
+            $id = DB::table('campaign_images')->insertGetId([
+                'id_campaign' => $campaign->id_campaign,
+                'image_url' => $path,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ], 'id_image');
+
+            $saved[] = DB::table('campaign_images')->where('id_image', $id)->first();
+        }
+
+        return response()->json([
+            'message' => count($saved) . ' gambar berhasil diupload.',
+            'images' => $saved,
+        ], 201);
+    }
+
+    public function imagesDestroy(Request $request, Campaign $campaign, int $image)
+    {
+        if ($request->user()->getKey() !== $campaign->id_user) {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+
+        $imageRow = DB::table('campaign_images')
+            ->where('id_image', $image)
+            ->where('id_campaign', $campaign->id_campaign)
+            ->first();
+
+        if (! $imageRow) {
+            return response()->json(['message' => 'Gambar tidak ditemukan pada campaign ini.'], 404);
+        }
+
+        Storage::disk('public')->delete($imageRow->image_url);
+        DB::table('campaign_images')->where('id_image', $image)->delete();
+
+        return response()->json(['message' => 'Gambar berhasil dihapus.']);
+    }
+
+    public function updatesIndex(Campaign $campaign)
+    {
+        $updates = DB::table('campaign_updates')
+            ->where('id_campaign', $campaign->id_campaign)
+            ->latest()
+            ->get();
+
+        return response()->json($updates);
+    }
+
+    public function updatesStore(Request $request, Campaign $campaign)
+    {
+        if ($request->user()->getKey() !== $campaign->id_user) {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+
+        $request->validate([
+            'judul' => 'required|string|max:255',
+            'deskripsi' => 'required|string',
+            'gambar' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+        ]);
+
+        $gambarPath = null;
+        if ($request->hasFile('gambar')) {
+            $gambarPath = $request->file('gambar')->store('campaign_updates', 'public');
+        }
+
+        $id = DB::table('campaign_updates')->insertGetId([
+            'id_campaign' => $campaign->id_campaign,
+            'judul' => $request->judul,
+            'deskripsi' => $request->deskripsi,
+            'gambar' => $gambarPath,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ], 'id_update');
+
+        return response()->json([
+            'message' => 'Update berhasil dibuat.',
+            'update' => DB::table('campaign_updates')->where('id_update', $id)->first(),
+        ], 201);
+    }
+
+    public function updatesUpdate(Request $request, Campaign $campaign, int $update)
+    {
+        if ($request->user()->getKey() !== $campaign->id_user) {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+
+        $updateRow = DB::table('campaign_updates')
+            ->where('id_update', $update)
+            ->where('id_campaign', $campaign->id_campaign)
+            ->first();
+
+        if (! $updateRow) {
+            return response()->json(['message' => 'Update tidak ditemukan pada campaign ini.'], 404);
+        }
+
+        $request->validate([
+            'judul' => 'sometimes|string|max:255',
+            'deskripsi' => 'sometimes|string',
+            'gambar' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+        ]);
+
+        $payload = $request->only(['judul', 'deskripsi']);
+
+        if ($request->hasFile('gambar')) {
+            if ($updateRow->gambar) {
+                Storage::disk('public')->delete($updateRow->gambar);
+            }
+            $payload['gambar'] = $request->file('gambar')->store('campaign_updates', 'public');
+        }
+
+        $payload['updated_at'] = now();
+
+        DB::table('campaign_updates')
+            ->where('id_update', $update)
+            ->update($payload);
+
+        return response()->json([
+            'message' => 'Update berhasil diperbarui.',
+            'update' => DB::table('campaign_updates')->where('id_update', $update)->first(),
+        ]);
+    }
+
+    public function updatesDestroy(Request $request, Campaign $campaign, int $update)
+    {
+        if ($request->user()->getKey() !== $campaign->id_user) {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+
+        $updateRow = DB::table('campaign_updates')
+            ->where('id_update', $update)
+            ->where('id_campaign', $campaign->id_campaign)
+            ->first();
+
+        if (! $updateRow) {
+            return response()->json(['message' => 'Update tidak ditemukan pada campaign ini.'], 404);
+        }
+
+        if ($updateRow->gambar) {
+            Storage::disk('public')->delete($updateRow->gambar);
+        }
+
+        DB::table('campaign_updates')->where('id_update', $update)->delete();
+
+        return response()->json(['message' => 'Update berhasil dihapus.']);
     }
 }

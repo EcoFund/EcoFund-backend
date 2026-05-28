@@ -47,7 +47,7 @@ class Campaign extends Model
 
     public function kategori()
     {
-        return $this->belongsTo(\App\Models\Kategori::class, 'kategori_id', 'id_kategori');
+        return $this->belongsTo(Kategori::class, 'kategori_id', 'id_kategori');
     }
 
     public function donations()
@@ -55,14 +55,9 @@ class Campaign extends Model
         return $this->hasMany(Donation::class, 'id_campaign', 'id_campaign');
     }
 
-    public function images()
+    public function deleteRequests()
     {
-        return $this->hasMany(\App\Models\CampaignImage::class, 'id_campaign', 'id_campaign');
-    }
-
-    public function updates()
-    {
-        return $this->hasMany(\App\Models\CampaignUpdate::class, 'id_campaign', 'id_campaign')->latest();
+        return $this->hasMany(DeleteRequest::class, 'id_campaign', 'id_campaign');
     }
 
     public function getPercentageAttribute(): int
@@ -75,15 +70,5 @@ class Campaign extends Model
     public function getRouteKeyName()
     {
         return 'slug';
-    }
-
-    public function updates()
-    {
-        return $this->hasMany(CampaignUpdate::class, 'id_campaign', 'id_campaign');
-    }
-
-    public function deleteRequests()
-    {
-        return $this->hasMany(DeleteRequest::class, 'id_campaign', 'id_campaign');
     }
 }

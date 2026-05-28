@@ -2,11 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CampaignController;
-use App\Http\Controllers\Api\CampaignImageController;
-use App\Http\Controllers\Api\CampaignUpdateController;
 use App\Http\Controllers\Api\DonationController;
-use App\Http\Controllers\Api\DashboardController;
-use App\Http\Controllers\Api\CampaignUpdateController;
 use App\Http\Controllers\Api\DeleteRequestController;
 use Illuminate\Support\Facades\Route;
 
@@ -29,10 +25,8 @@ Route::prefix('campaigns')->group(function () {
     Route::get('categories', [CampaignController::class, 'categories']);
     Route::get('{campaign}', [CampaignController::class, 'show']);
     Route::get('{campaign}/donations', [DonationController::class, 'campaignDonations']);
-
-    // Publik: lihat gambar & update campaign
-    Route::get('{campaign}/images', [CampaignImageController::class, 'index']);
-    Route::get('{campaign}/updates', [CampaignUpdateController::class, 'index']);
+    Route::get('{campaign}/images', [CampaignController::class, 'imagesIndex']);
+    Route::get('{campaign}/updates', [CampaignController::class, 'updatesIndex']);
 });
 
 // ── Webhook payment (dikecualikan dari CSRF di bootstrap/app.php) ──────
@@ -52,15 +46,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('{campaign}', [CampaignController::class, 'destroy']);
         Route::patch('{campaign}/approve', [CampaignController::class, 'approve']);
         Route::patch('{campaign}/reject', [CampaignController::class, 'reject']);
-
-        // Campaign Images
-        Route::post('{campaign}/images', [CampaignImageController::class, 'store']);
-        Route::delete('{campaign}/images/{image}', [CampaignImageController::class, 'destroy']);
-
-        // Campaign Updates
-        Route::post('{campaign}/updates', [CampaignUpdateController::class, 'store']);
-        Route::put('{campaign}/updates/{update}', [CampaignUpdateController::class, 'update']);
-        Route::delete('{campaign}/updates/{update}', [CampaignUpdateController::class, 'destroy']);
+        Route::post('{campaign}/images', [CampaignController::class, 'imagesStore']);
+        Route::delete('{campaign}/images/{image}', [CampaignController::class, 'imagesDestroy']);
+        Route::post('{campaign}/updates', [CampaignController::class, 'updatesStore']);
+        Route::put('{campaign}/updates/{update}', [CampaignController::class, 'updatesUpdate']);
+        Route::delete('{campaign}/updates/{update}', [CampaignController::class, 'updatesDestroy']);
     });
 
     Route::prefix('donations')->group(function () {
@@ -69,19 +59,8 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 });
 
-//public lihat update campaign
-Route::get('campaigns/{campaign}/updates', [CampaignUpdateController::class, 'index']);
-
-// Auth routes
 Route::middleware('auth:sanctum')->group(function () {
-    // Campaign updates (fundraiser)
-    Route::post('campaigns/{campaign}/updates', [CampaignUpdateController::class, 'store']);
-    Route::delete('campaigns/{campaign}/updates/{update}', [CampaignUpdateController::class, 'destroy']);
-
-    // Delete requests (fundraiser)
     Route::post('campaigns/{campaign}/delete-request', [DeleteRequestController::class, 'store']);
-
-    // Delete requests (admin)
     Route::get('delete-requests', [DeleteRequestController::class, 'index']);
     Route::patch('delete-requests/{deleteRequest}/approve', [DeleteRequestController::class, 'approve']);
     Route::patch('delete-requests/{deleteRequest}/reject', [DeleteRequestController::class, 'reject']);
