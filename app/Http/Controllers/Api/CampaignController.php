@@ -39,7 +39,7 @@ class CampaignController extends Controller
 
     public function show(Campaign $campaign)
     {
-        $campaign->load('user:id_user,nama,email,no_hp,foto,role', 'kategori:id_kategori,nama_kategori');
+        $campaign->load('user:id_user,nama,email,no_hp,foto,role', 'kategori:id_kategori,nama_kategori', 'images');
 
         return response()->json($campaign);
     }

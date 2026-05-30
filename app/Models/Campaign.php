@@ -60,6 +60,11 @@ class Campaign extends Model
         return $this->hasMany(DeleteRequest::class, 'id_campaign', 'id_campaign');
     }
 
+    public function images()
+    {
+        return $this->hasMany(CampaignImage::class, 'id_campaign', 'id_campaign');
+    }
+
     public function getPercentageAttribute(): int
     {
         return $this->target_donasi > 0
