@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class DeleteRequest extends Model
 {
     protected $table = 'delete_requests';
+    
 
     protected $fillable = [
         'id_campaign', 'id_user', 'alasan', 'status',

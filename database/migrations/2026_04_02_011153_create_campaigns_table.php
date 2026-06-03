@@ -27,6 +27,11 @@ return new class extends Migration
     $table->string('lokasi')->nullable();
     $table->string('gambar')->nullable();
 
+    $table->string('bank_account_number')->nullable()->after('payment_method');
+    $table->string('bank_account_name')->nullable()->after('bank_account_number');
+    $table->string('phone_number')->nullable()->after('bank_account_name');
+    $table->string('qris_image')->nullable()->after('phone_number');
+
     $table->enum('status', ['pending','aktif','selesai','ditolak'])->default('pending');
 
     $table->date('tanggal_mulai')->nullable();

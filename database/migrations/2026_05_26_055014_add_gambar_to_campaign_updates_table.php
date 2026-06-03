@@ -9,13 +9,14 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up()
+public function up()
 {
-    Schema::table('campaign_updates', function (Blueprint $table) {
-        $table->string('gambar')->nullable()->after('deskripsi');
-    });
+    if (!Schema::hasColumn('campaign_updates', 'gambar')) {
+        Schema::table('campaign_updates', function (Blueprint $table) {
+            $table->string('gambar')->nullable()->after('deskripsi');
+        });
+    }
 }
-
 public function down()
 {
     Schema::table('campaign_updates', function (Blueprint $table) {

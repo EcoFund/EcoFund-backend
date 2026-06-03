@@ -17,8 +17,6 @@ return new class extends Migration
     $table->foreignId('id_campaign')->constrained('campaigns','id_campaign')->cascadeOnDelete();
 
     $table->string('nama_donatur');
-    $table->string('email');
-    $table->string('no_hp', 20)->nullable();
 
     $table->bigInteger('jumlah');
     $table->boolean('is_anonymous')->default(false);

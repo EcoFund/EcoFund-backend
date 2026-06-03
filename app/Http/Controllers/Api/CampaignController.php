@@ -93,6 +93,10 @@ class CampaignController extends Controller
             'target_donasi' => 'required|numeric|min:10000',
             'lokasi' => 'nullable|string|max:255',
             'payment_method' => 'required|string|max:100',
+            'bank_account_number' => 'nullable|string|max:100',
+            'bank_account_name' => 'nullable|string|max:255',
+            'phone_number' => 'nullable|string|max:20',
+            'qris_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
             'gambar' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
             'supporting_document' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
             'tanggal_mulai' => 'nullable|date',
@@ -121,6 +125,10 @@ class CampaignController extends Controller
             'lokasi' => $request->lokasi,
             'gambar' => $gambarPath,
             'payment_method' => $request->payment_method,
+            'bank_account_number' => $request->bank_account_number,
+            'bank_account_name' => $request->bank_account_name,
+            'phone_number' => $request->phone_number,
+            'qris_image' => $request->hasFile('qris_image') ? $request->file('qris_image')->store('campaigns/qris', 'public') : null,
             'supporting_document' => $supportingDocumentPath,
             'status' => 'pending',
             'tanggal_mulai' => $request->tanggal_mulai,
@@ -248,6 +256,10 @@ class CampaignController extends Controller
         foreach ($updateImages as $path) {
             Storage::disk('public')->delete($path);
         }
+
+        if ($campaign->qris_image) {
+        Storage::disk('public')->delete($campaign->qris_image);
+    }
 
         $campaign->delete();
 

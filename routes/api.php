@@ -53,12 +53,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('{campaign}/updates/{update}', [CampaignController::class, 'updatesDestroy']);
     });
 
-    Route::prefix('donations')->group(function () {
-        Route::post('campaigns/{campaign}', [DonationController::class, 'store']);
-        Route::get('my', [DonationController::class, 'myDonations']);
-    });
+   
 });
 
+Route::post('donations/campaigns/{campaign}', [DonationController::class, 'store']);
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::prefix('donations')->group(function () {
+            Route::get('my', [DonationController::class, 'myDonations']);
+        });
+    });
+    
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('campaigns/{campaign}/delete-request', [DeleteRequestController::class, 'store']);
     Route::get('delete-requests', [DeleteRequestController::class, 'index']);
