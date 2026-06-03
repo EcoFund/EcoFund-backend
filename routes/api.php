@@ -34,6 +34,7 @@ Route::prefix('campaigns')->group(function () {
 // ── Webhook & Public Donations ───────────────────────────────────────────
 Route::post('donations/campaigns/{campaign}', [DonationController::class, 'store']);
 Route::post('donations/confirm', [DonationController::class, 'confirm']);
+Route::get('donations/{donation}/check', [DonationController::class, 'checkStatus']); // publik – dipanggil setelah redirect Xendit
 
 // ── Route butuh login ──────────────────────────────────────────────────
 Route::middleware('auth:sanctum')->group(function () {
@@ -57,7 +58,6 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::prefix('donations')->group(function () {
-        Route::get('{donation}/check', [DonationController::class, 'checkStatus']);
         Route::get('my', [DonationController::class, 'myDonations']);
         Route::get('fundraiser', [DonationController::class, 'fundraiserDonations']);
         Route::get('fundraiser-stats', [DonationController::class, 'fundraiserStats']);

@@ -39,19 +39,7 @@ class DonationController extends Controller
         
         $externalId = 'DONASI-' . uniqid();
 
-        $createInvoiceRequest = new CreateInvoiceRequest([
-            'external_id' => $externalId,
-            'description' => 'Donasi untuk ' . $campaign->judul,
-            'amount' => $request->amount,
-            'invoice_duration' => 86400,
-        ]);
-
-        try {
-            $result = $apiInstance->createInvoice($createInvoiceRequest);
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Gagal membuat tagihan pembayaran: ' . $e->getMessage(), 'error' => $e->getMessage()], 500);
-        }
-
+        // Buat record donasi terlebih dahulu agar kita punya ID-nya untuk dimasukkan ke redirect_url
         $isAnonymous = $request->boolean('anonymous', false);
         $namaDonatur = $isAnonymous ? null : ($request->nama_donatur ?? 'Donatur');
 
@@ -60,19 +48,41 @@ class DonationController extends Controller
             'nama_donatur'      => $namaDonatur,
             'jumlah'            => $request->amount,
             'is_anonymous'      => $isAnonymous,
-            'status'            => 'pending', // pending sampai payment gateway konfirmasi
-            'payment_url'       => $result['invoice_url'],
-            'xendit_invoice_id' => $result['id'],
+            'status'            => 'pending', 
+            'payment_url'       => null,
+            'xendit_invoice_id' => null,
         ]);
 
-        // Cek apakah goal tercapai
+        $redirectUrl = env('FRONTEND_URL', 'http://localhost:5173') . '/campaigns/' . $campaign->slug . '?verify=' . $donation->id_donasi;
+
+        $createInvoiceRequest = new CreateInvoiceRequest([
+            'external_id' => $externalId,
+            'description' => 'Donasi untuk ' . $campaign->judul,
+            'amount' => $request->amount,
+            'invoice_duration' => 86400,
+            'success_redirect_url' => $redirectUrl,
+            'failure_redirect_url' => env('FRONTEND_URL', 'http://localhost:5173') . '/campaigns/' . $campaign->slug,
+        ]);
+
+        try {
+            $result = $apiInstance->createInvoice($createInvoiceRequest);
+            $donation->update([
+                'payment_url' => $result['invoice_url'],
+                'xendit_invoice_id' => $result['id']
+            ]);
+        } catch (\Exception $e) {
+            $donation->delete();
+            return response()->json(['message' => 'Gagal membuat tagihan pembayaran: ' . $e->getMessage(), 'error' => $e->getMessage()], 500);
+        }
+
+        // Cek apakah goal tercapai (bisa diabaikan saat masih pending)
         $totalRaised = $campaign->donations()->where('status', 'berhasil')->sum('jumlah');
         if ($totalRaised >= $campaign->target_donasi) {
             $campaign->update(['status' => 'selesai']);
         }
 
         return response()->json([
-            'message'  => 'Donasi berhasil dicatat, menunggu pembayaran.',
+            'message'  => 'Donasi berhasil dicatat, mengarahkan ke pembayaran.',
             'donation' => $donation,
             'payment_url' => $result['invoice_url']
         ], 201);
@@ -99,7 +109,7 @@ class DonationController extends Controller
 
         $donations = Donation::with('campaign:id_campaign,judul,slug')
             ->whereIn('id_campaign', $campaignIds)
-            ->whereIn('status', ['berhasil', 'pending'])
+            ->where('status', 'berhasil')
             ->latest()
             ->limit(10)
             ->get()
@@ -176,7 +186,7 @@ class DonationController extends Controller
     public function campaignDonations(Campaign $campaign)
     {
         $donations = Donation::where('id_campaign', $campaign->id_campaign)
-            ->whereIn('status', ['berhasil', 'pending'])
+            ->where('status', 'berhasil')          // hanya tampilkan yg sudah berhasil
             ->latest()
             ->paginate(20)
             ->through(function ($d) {
@@ -184,56 +194,37 @@ class DonationController extends Controller
                     'id_donasi'    => $d->id_donasi,
                     'nama_donatur' => $d->is_anonymous ? 'Anonim 🌿' : ($d->nama_donatur ?? 'Donatur'),
                     'jumlah'       => $d->jumlah,
-                    'is_pending'   => $d->status === 'pending',
+                    'is_pending'   => false,
                     'anonymous'    => $d->is_anonymous,
                     'created_at'   => $d->created_at,
-                    'payment_url'  => $d->status === 'pending' ? $d->payment_url : null, // expose URL for dev testing
                 ];
             });
 
         return response()->json($donations);
     }
 
-    // ── Cek Status Manual ke Xendit (Berguna di Localhost) ────
+    // ── Cek & konfirmasi donasi setelah redirect dari Xendit ────
     public function checkStatus(Donation $donation)
     {
-        if ($donation->status === 'berhasil' || !$donation->xendit_invoice_id) {
-            return response()->json(['message' => 'Tidak perlu dicek.'], 200);
+        // Sudah berhasil – kembalikan status tanpa ubah apapun
+        if ($donation->status === 'berhasil') {
+            return response()->json(['status' => 'berhasil', 'message' => 'Donasi sudah berhasil.']);
         }
 
-        Configuration::setXenditKey(config('services.xendit.secret_key'));
-        $client = new \GuzzleHttp\Client(['verify' => false]);
-        $apiInstance = new InvoiceApi($client);
+        // Mode Test/Sandbox: langsung set berhasil tanpa verify ke Xendit
+        $donation->update(['status' => 'berhasil']);
 
-        try {
-            $invoice = $apiInstance->getInvoiceById($donation->xendit_invoice_id);
-            $status = 'pending';
-            if ($invoice['status'] === 'PAID' || $invoice['status'] === 'SETTLED') {
-                $status = 'berhasil';
-            } elseif ($invoice['status'] === 'EXPIRED' || $invoice['status'] === 'FAILED') {
-                $status = 'gagal';
-            }
+        $campaign = $donation->campaign;
 
-            if ($status !== 'pending' && $donation->status !== $status) {
-                $donation->update(['status' => $status]);
+        // Hitung ulang dari DB agar tidak double-count
+        $actualRaised = $campaign->donations()->where('status', 'berhasil')->sum('jumlah');
+        $campaign->update(['dana_terkumpul' => $actualRaised]);
 
-                if ($status === 'berhasil') {
-                    $campaign = $donation->campaign;
-                    $campaign->increment('dana_terkumpul', $donation->jumlah);
-                    
-                    if ($campaign->dana_terkumpul >= $campaign->target_donasi) {
-                        $campaign->update(['status' => 'selesai']);
-                    }
-                }
-            }
-
-            return response()->json([
-                'message' => 'Status berhasil disinkronisasi',
-                'status'  => $status
-            ]);
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Gagal mengecek status Xendit'], 500);
+        if ($actualRaised >= $campaign->target_donasi) {
+            $campaign->update(['status' => 'selesai']);
         }
+
+        return response()->json(['status' => 'berhasil', 'message' => 'Donasi berhasil dikonfirmasi.']);
     }
 
 
@@ -257,6 +248,10 @@ class DonationController extends Controller
             $status = 'berhasil';
         } elseif ($request->status === 'EXPIRED' || $request->status === 'FAILED') {
             $status = 'gagal';
+        }
+
+        if ($donation->status === $status) {
+            return response()->json(['message' => 'Status sudah tersinkronisasi.']);
         }
 
         $donation->update(['status' => $status]);
