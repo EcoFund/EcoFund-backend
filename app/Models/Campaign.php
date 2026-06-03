@@ -76,4 +76,16 @@ class Campaign extends Model
     {
         return 'slug';
     }
+
+    public static function deactivateExpired()
+    {
+        if (!\Illuminate\Support\Facades\Schema::hasTable('campaigns')) {
+            return 0;
+        }
+
+        return self::where('status', 'aktif')
+            ->whereNotNull('tanggal_selesai')
+            ->where('tanggal_selesai', '<', now()->toDateString())
+            ->update(['status' => 'selesai']);
+    }
 }

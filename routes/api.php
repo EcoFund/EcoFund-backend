@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\CampaignController;
 use App\Http\Controllers\Api\DonationController;
 use App\Http\Controllers\Api\DeleteRequestController;
@@ -21,6 +22,7 @@ Route::middleware('auth:sanctum')->get(
 
 // ── Campaign & donasi publik ───────────────────────────────────────────
 Route::prefix('campaigns')->group(function () {
+    Route::get('stats', [CampaignController::class, 'stats']);
     Route::get('/', [CampaignController::class, 'index']);
     Route::get('categories', [CampaignController::class, 'categories']);
     Route::get('{campaign}', [CampaignController::class, 'show']);
@@ -29,7 +31,8 @@ Route::prefix('campaigns')->group(function () {
     Route::get('{campaign}/updates', [CampaignController::class, 'updatesIndex']);
 });
 
-// ── Webhook payment (dikecualikan dari CSRF di bootstrap/app.php) ──────
+// ── Webhook & Public Donations ───────────────────────────────────────────
+Route::post('donations/campaigns/{campaign}', [DonationController::class, 'store']);
 Route::post('donations/confirm', [DonationController::class, 'confirm']);
 
 // ── Route butuh login ──────────────────────────────────────────────────
@@ -54,9 +57,12 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::prefix('donations')->group(function () {
-        Route::post('campaigns/{campaign}', [DonationController::class, 'store']);
+        Route::get('{donation}/check', [DonationController::class, 'checkStatus']);
         Route::get('my', [DonationController::class, 'myDonations']);
+        Route::get('fundraiser', [DonationController::class, 'fundraiserDonations']);
+        Route::get('fundraiser-stats', [DonationController::class, 'fundraiserStats']);
     });
+
 });
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -65,3 +71,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('delete-requests/{deleteRequest}/approve', [DeleteRequestController::class, 'approve']);
     Route::patch('delete-requests/{deleteRequest}/reject', [DeleteRequestController::class, 'reject']);
 });
+
+// ── Admin routes ───────────────────────────────────────────────────────
+Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
+    Route::get('stats', [AdminController::class, 'stats']);
+    Route::get('chart', [AdminController::class, 'adminChart']);
+    Route::get('users', [AdminController::class, 'users']);
+});
+

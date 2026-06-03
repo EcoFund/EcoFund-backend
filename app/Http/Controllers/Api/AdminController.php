@@ -4,134 +4,182 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Campaign;
+use App\Models\DeleteRequest;
 use App\Models\Donation;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class AdminController extends Controller
 {
-    public function index(Request $request)
+    /**
+     * GET /api/admin/stats
+     * Dashboard stats for the admin panel.
+     * Requires auth:sanctum + admin role.
+     */
+    public function stats(Request $request)
     {
-        $userId = $request->user()->id;
+        Campaign::deactivateExpired();
 
-        // IDs kampanye milik user ini
-        $campaignIds = Campaign::where('user_id', $userId)->pluck('id');
+        // Campaign counts by status
+        $statusCounts = Campaign::select('status', DB::raw('count(*) as total'))
+            ->groupBy('status')
+            ->pluck('total', 'status');
 
-        // Total donasi yang masuk ke semua kampanye user
-        $totalDonations = Donation::whereIn('campaign_id', $campaignIds)
-            ->where('status', 'paid')
-            ->sum('amount');
+        $active    = $statusCounts['aktif']    ?? 0;
+        $pending   = $statusCounts['pending']  ?? 0;
+        $selesai   = $statusCounts['selesai']  ?? 0;
+        $ditolak   = $statusCounts['ditolak']  ?? 0;
+        $totalCamp = $active + $pending + $selesai + $ditolak;
 
-        // Jumlah kampanye aktif
-        $activeCampaigns = Campaign::where('user_id', $userId)
-            ->where('status', 'active')
-            ->count();
+        // Donation totals
+        $totalDonasi  = Donation::where('status', 'berhasil')->sum('jumlah');
+        $totalDonatur = Donation::where('status', 'berhasil')
+            ->whereNotNull('nama_donatur')
+            ->where('is_anonymous', false)
+            ->distinct('nama_donatur')
+            ->count('nama_donatur');
 
-        // Jumlah donor unik
-        $totalDonors = Donation::whereIn('campaign_id', $campaignIds)
-            ->where('status', 'paid')
-            ->distinct('user_id')
-            ->count('user_id');
+        // Top 4 donors (non-anonymous, by total donation amount)
+        $topDonors = Donation::where('status', 'berhasil')
+            ->where('is_anonymous', false)
+            ->whereNotNull('nama_donatur')
+            ->where('nama_donatur', '!=', '')
+            ->select('nama_donatur', DB::raw('SUM(jumlah) as total_donasi'))
+            ->groupBy('nama_donatur')
+            ->orderByDesc('total_donasi')
+            ->limit(4)
+            ->get();
 
-        // Dana yang sudah dicairkan (status disbursed)
-        $fundDisbursed = Donation::whereIn('campaign_id', $campaignIds)
-            ->where('status', 'disbursed')
-            ->sum('amount');
+        // Calculate combined anonymous donations
+        $anonSum = Donation::where('status', 'berhasil')
+            ->where(function($query) {
+                $query->where('is_anonymous', true)
+                      ->orWhereNull('nama_donatur')
+                      ->orWhere('nama_donatur', '');
+            })
+            ->sum('jumlah');
 
-        // Donasi terbaru (5 terakhir)
-        $recentDonations = Donation::with([
-            'user:id,name,photo',
-            'campaign:id,title,slug',
-        ])
-            ->whereIn('campaign_id', $campaignIds)
-            ->where('status', 'paid')
+        if ($anonSum > 0) {
+            $topDonors->push((object)[
+                'nama_donatur' => 'Anonim',
+                'total_donasi' => $anonSum
+            ]);
+            // Re-sort to put Anonim in the right place
+            $topDonors = $topDonors->sortByDesc('total_donasi')->values()->take(5);
+        }
+
+        // 5 latest successful donations
+        $recentDonations = Donation::with('campaign:id_campaign,judul,slug')
+            ->where('status', 'berhasil')
             ->latest()
             ->limit(5)
             ->get()
             ->map(function ($d) {
-                if ($d->anonymous) {
-                    $d->user = (object) ['name' => 'Anonim', 'photo' => null];
-                }
-                return $d;
+                return [
+                    'id_donasi'    => $d->id_donasi,
+                    'nama_donatur' => $d->is_anonymous ? 'Anonim' : ($d->nama_donatur ?? 'Anonim'),
+                    'jumlah'       => $d->jumlah,
+                    'campaign'     => $d->campaign ? ['judul' => $d->campaign->judul, 'slug' => $d->campaign->slug] : null,
+                    'created_at'   => $d->created_at,
+                ];
             });
 
-        // Kampanye milik user dengan progress
-        $myCampaigns = Campaign::where('user_id', $userId)
-            ->withSum(['donations' => fn($q) => $q->where('status', 'paid')], 'amount')
-            ->withCount('donations')
+        // Delete requests pending
+        $deleteRequests = DeleteRequest::with([
+            'campaign:id_campaign,judul,slug',
+            'user:id_user,nama,email',
+        ])
+            ->where('status', 'pending')
             ->latest()
+            ->limit(6)
             ->get()
-            ->map(function ($c) {
-                $c->percentage = $c->goal_amount > 0
-                    ? min(100, round(($c->donations_sum_amount / $c->goal_amount) * 100))
-                    : 0;
-                return $c;
-            });
-
-        // Grafik donasi per bulan (12 bulan terakhir)
-        $chartData = Donation::whereIn('campaign_id', $campaignIds)
-            ->where('status', 'paid')
-            ->where('created_at', '>=', now()->subMonths(12))
-            ->select(
-                DB::raw("DATE_FORMAT(created_at, '%Y-%m') as month"),
-                DB::raw('SUM(amount) as total')
-            )
-            ->groupBy('month')
-            ->orderBy('month')
-            ->get();
+            ->map(fn($dr) => [
+                'id'         => $dr->id,
+                'alasan'     => $dr->alasan,
+                'created_at' => $dr->created_at,
+                'campaign'   => $dr->campaign ? ['judul' => $dr->campaign->judul, 'slug' => $dr->campaign->slug] : null,
+                'user'       => $dr->user   ? ['nama'  => $dr->user->nama,       'email'=> $dr->user->email]   : null,
+            ]);
 
         return response()->json([
-            'stats' => [
-                'total_donations' => $totalDonations,
-                'active_campaigns' => $activeCampaigns,
-                'total_donors' => $totalDonors,
-                'fund_disbursed' => $fundDisbursed,
+            'campaigns' => [
+                'total'    => $totalCamp,
+                'aktif'    => $active,
+                'pending'  => $pending,
+                'selesai'  => $selesai,
+                'ditolak'  => $ditolak,
             ],
+            'donasi' => [
+                'total'    => $totalDonasi,
+                'donatur'  => $totalDonatur,
+            ],
+            'top_donors'       => $topDonors,
             'recent_donations' => $recentDonations,
-            'my_campaigns' => $myCampaigns,
-            'chart_data' => $chartData,
+            'delete_requests'  => $deleteRequests,
         ]);
     }
 
-    public function activity(Request $request)
+    /**
+     * GET /api/admin/chart?period=Minggu|Bulan|Tahun
+     * Period-based chart data for admin Donation Overview.
+     */
+    public function adminChart(Request $request)
     {
-        $userId = $request->user()->id;
-        $campaignIds = Campaign::where('user_id', $userId)->pluck('id');
+        $period = $request->query('period', 'Minggu');
+        $query  = Donation::where('status', 'berhasil');
+        $now    = now();
+        $data   = [];
 
-        // Gabungkan berbagai jenis aktivitas
-        $donations = Donation::with(['user:id,name', 'campaign:id,title'])
-            ->whereIn('campaign_id', $campaignIds)
-            ->where('status', 'paid')
+        if ($period === 'Minggu') {
+            $monday    = $now->copy()->startOfWeek(\Carbon\Carbon::MONDAY);
+            $donations = $query->where('created_at', '>=', $monday->startOfDay())->get();
+            $dayNames  = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+            for ($i = 0; $i <= 6; $i++) {
+                $date = $monday->copy()->addDays($i);
+                $sum  = $donations->where('created_at', '>=', $date->copy()->startOfDay())
+                                  ->where('created_at', '<=', $date->copy()->endOfDay())
+                                  ->sum('jumlah');
+                $data[] = ['label' => $dayNames[$i], 'val' => (int)$sum];
+            }
+        } elseif ($period === 'Bulan') {
+            $start     = $now->copy()->subDays(27)->startOfDay();
+            $donations = $query->where('created_at', '>=', $start)->get();
+            for ($i = 3; $i >= 0; $i--) {
+                $weekStart = $now->copy()->subDays($i * 7 + 6)->startOfDay();
+                $weekEnd   = $now->copy()->subDays($i * 7)->endOfDay();
+                $sum = $donations->where('created_at', '>=', $weekStart)
+                                 ->where('created_at', '<=', $weekEnd)
+                                 ->sum('jumlah');
+                $data[] = ['label' => 'Mg ' . (4 - $i), 'val' => (int)$sum];
+            }
+        } elseif ($period === 'Tahun') {
+            $yearStart = $now->copy()->startOfYear();
+            $donations = $query->whereYear('created_at', $now->year)->get();
+            $months    = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+            for ($m = 1; $m <= 12; $m++) {
+                $monthStart = $yearStart->copy()->month($m)->startOfMonth();
+                $monthEnd   = $yearStart->copy()->month($m)->endOfMonth();
+                $sum = $donations->where('created_at', '>=', $monthStart)
+                                 ->where('created_at', '<=', $monthEnd)
+                                 ->sum('jumlah');
+                $data[] = ['label' => $months[$m - 1], 'val' => (int)$sum];
+            }
+        }
+
+        return response()->json($data);
+    }
+
+    /**
+     * GET /api/admin/users
+     * List all users (admin only).
+     */
+    public function users(Request $request)
+    {
+        $users = User::select('id_user', 'nama', 'email', 'no_hp', 'foto', 'role', 'created_at')
             ->latest()
-            ->limit(10)
-            ->get()
-            ->map(fn($d) => [
-                'type' => 'donation',
-                'icon' => 'ðŸ’š',
-                'message' => ($d->anonymous ? 'Anonim' : $d->user->name)
-                    . ' berdonasi Rp ' . number_format($d->amount, 0, ',', '.')
-                    . ' ke ' . $d->campaign->title,
-                'time' => $d->created_at->diffForHumans(),
-                'read' => false,
-            ]);
+            ->paginate($request->input('per_page', 20));
 
-        $milestones = Campaign::where('user_id', $userId)
-            ->where('updated_at', '>=', now()->subDays(30))
-            ->whereIn('status', ['completed', 'active'])
-            ->get()
-            ->map(fn($c) => [
-                'type' => 'milestone',
-                'icon' => 'ðŸ“£',
-                'message' => 'Kampanye "' . $c->title . '" mencapai status ' . $c->status,
-                'time' => $c->updated_at->diffForHumans(),
-                'read' => true,
-            ]);
-
-        $activities = collect($donations)
-            ->merge($milestones)
-            ->sortByDesc('time')
-            ->values();
-
-        return response()->json($activities);
+        return response()->json($users);
     }
 }

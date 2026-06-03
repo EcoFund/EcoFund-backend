@@ -12,8 +12,35 @@ use OpenApi\Attributes as OA;
 
 class CampaignController extends Controller
 {
+    public function stats()
+    {
+        Campaign::deactivateExpired();
+
+        $totalRaised = \App\Models\Donation::where('status', 'berhasil')->sum('jumlah');
+        $totalDonors = \App\Models\Donation::where('status', 'berhasil')
+            ->whereNotNull('nama_donatur')
+            ->distinct('nama_donatur')
+            ->count('nama_donatur');
+        $totalCampaigns = Campaign::whereIn('status', ['aktif', 'selesai'])->count();
+
+        // Calculate success rate: completed campaigns divided by total (avoid division by zero)
+        $fullyFundedCount = Campaign::whereIn('status', ['aktif', 'selesai'])
+            ->whereColumn('dana_terkumpul', '>=', 'target_donasi')
+            ->count();
+            
+        $successRate = $totalCampaigns > 0 ? round(($fullyFundedCount / $totalCampaigns) * 100) : 0;
+
+        return response()->json([
+            'total_raised' => $totalRaised,
+            'total_donors' => $totalDonors,
+            'total_campaigns' => $totalCampaigns,
+            'success_rate' => $successRate
+        ]);
+    }
+
     public function index(Request $request)
     {
+        Campaign::deactivateExpired();
         $query = Campaign::with('user:id_user,nama,foto');
 
         if ($request->filled('search')) {
@@ -39,50 +66,22 @@ class CampaignController extends Controller
 
     public function show(Campaign $campaign)
     {
+        Campaign::deactivateExpired();
+        $campaign->refresh();
         $campaign->load('user:id_user,nama,email,no_hp,foto,role', 'kategori:id_kategori,nama_kategori', 'images');
+
+        // Hitung ulang dana_terkumpul dari donasi berhasil yang sesungguhnya
+        // (agar progress bar selalu akurat meski webhook belum terpanggil di dev)
+        $actualRaised = $campaign->donations()->where('status', 'berhasil')->sum('jumlah');
+        if ((int)$actualRaised !== (int)$campaign->dana_terkumpul) {
+            $campaign->update(['dana_terkumpul' => $actualRaised]);
+            $campaign->dana_terkumpul = $actualRaised;
+        }
 
         return response()->json($campaign);
     }
 
-    #[OA\Post(
-        path: '/campaigns',
-        operationId: 'createCampaign',
-        summary: 'Buat campaign baru',
-        security: [['sanctum' => []]],
-        tags: ['Campaigns'],
-        requestBody: new OA\RequestBody(
-            required: true,
-            content: new OA\MediaType(
-                mediaType: 'multipart/form-data',
-                schema: new OA\Schema(
-                    required: ['kategori_id', 'identities', 'judul', 'deskripsi', 'target_donasi', 'payment_method'],
-                    properties: [
-                        new OA\Property(property: 'kategori_id', type: 'integer', example: 1),
-                        new OA\Property(
-                            property: 'identities',
-                            type: 'string',
-                            example: 'other_people_or_community',
-                            enum: ['for_yourself', 'organization_or_company', 'other_people_or_community']
-                        ),
-                        new OA\Property(property: 'judul', type: 'string', example: 'Bantu Renovasi Sekolah'),
-                        new OA\Property(property: 'deskripsi', type: 'string', example: 'Penggalangan dana untuk renovasi sekolah desa.'),
-                        new OA\Property(property: 'target_donasi', type: 'integer', example: 50000000),
-                        new OA\Property(property: 'lokasi', type: 'string', example: 'Bandung'),
-                        new OA\Property(property: 'payment_method', type: 'string', example: 'bank_transfer'),
-                        new OA\Property(property: 'gambar', type: 'string', format: 'binary'),
-                        new OA\Property(property: 'supporting_document', type: 'string', format: 'binary'),
-                        new OA\Property(property: 'tanggal_mulai', type: 'string', format: 'date', example: '2026-04-24'),
-                        new OA\Property(property: 'tanggal_selesai', type: 'string', format: 'date', example: '2026-05-30'),
-                    ]
-                )
-            )
-        ),
-        responses: [
-            new OA\Response(response: 201, description: 'Campaign berhasil dibuat'),
-            new OA\Response(response: 401, description: 'Belum login'),
-            new OA\Response(response: 422, description: 'Validasi gagal'),
-        ]
-    )]
+
     public function store(Request $request)
     {
         $request->validate([
@@ -256,9 +255,21 @@ class CampaignController extends Controller
 
     public function myCampaigns(Request $request)
     {
+        Campaign::deactivateExpired();
+
         $campaigns = Campaign::where('id_user', $request->user()->getKey())
+            ->withSum(['donations' => fn ($q) => $q->where('status', 'berhasil')], 'jumlah')
             ->latest()
-            ->get();
+            ->get()
+            ->map(function ($c) {
+                // Sinkronisasi dana_terkumpul dengan sum donasi berhasil nyata
+                $actual = (int) ($c->donations_sum_jumlah ?? 0);
+                if ($actual !== (int) $c->dana_terkumpul) {
+                    $c->update(['dana_terkumpul' => $actual]);
+                }
+                $c->dana_terkumpul = $actual;
+                return $c;
+            });
 
         return response()->json($campaigns);
     }

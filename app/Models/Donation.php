@@ -17,12 +17,11 @@ class Donation extends Model
     protected $fillable = [
         'id_campaign',
         'nama_donatur',
-        'email',
-        'no_hp',
         'jumlah',
         'is_anonymous',
         'status',
-        'pesan',
+        'payment_url',
+        'xendit_invoice_id',
     ];
 
     protected $casts = [

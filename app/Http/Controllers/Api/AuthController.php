@@ -15,33 +15,7 @@ use OpenApi\Attributes as OA;
 
 class AuthController extends Controller
 {
-    #[OA\Post(
-        path: '/auth/register',
-        operationId: 'registerUser',
-        summary: 'Registrasi user baru',
-        tags: ['Auth'],
-        requestBody: new OA\RequestBody(
-            required: true,
-            content: new OA\MediaType(
-                mediaType: 'multipart/form-data',
-                schema: new OA\Schema(
-                    required: ['nama', 'email', 'no_hp', 'password', 'password_confirmation'],
-                    properties: [
-                        new OA\Property(property: 'nama', type: 'string', example: 'Budi Santoso'),
-                        new OA\Property(property: 'email', type: 'string', format: 'email', example: 'budi@example.com'),
-                        new OA\Property(property: 'no_hp', type: 'string', example: '081234567890'),
-                        new OA\Property(property: 'password', type: 'string', format: 'password', example: 'secret123'),
-                        new OA\Property(property: 'password_confirmation', type: 'string', format: 'password', example: 'secret123'),
-                        new OA\Property(property: 'foto', type: 'string', format: 'binary'),
-                    ]
-                )
-            )
-        ),
-        responses: [
-            new OA\Response(response: 201, description: 'Registrasi berhasil'),
-            new OA\Response(response: 422, description: 'Validasi gagal'),
-        ]
-    )]
+
     // ── Register ──────────────────────────────────────────
     public function register(Request $request)
     {
@@ -79,26 +53,7 @@ class AuthController extends Controller
     }
 
     // ── Login ─────────────────────────────────────────────
-    #[OA\Post(
-        path: '/auth/login',
-        operationId: 'loginUser',
-        summary: 'Login dengan email atau nomor HP',
-        tags: ['Auth'],
-        requestBody: new OA\RequestBody(
-            required: true,
-            content: new OA\JsonContent(
-                required: ['login', 'password'],
-                properties: [
-                    new OA\Property(property: 'login', type: 'string', example: '081234567890'),
-                    new OA\Property(property: 'password', type: 'string', format: 'password', example: 'secret123'),
-                ]
-            )
-        ),
-        responses: [
-            new OA\Response(response: 200, description: 'Login berhasil'),
-            new OA\Response(response: 422, description: 'Login gagal'),
-        ]
-    )]
+
     public function login(Request $request)
     {
         $request->validate([
@@ -197,10 +152,13 @@ class AuthController extends Controller
             ?? User::where('email', $email)->first();
 
         if ($user) {
-            // Update google_id jika belum tersimpan
-            if (! $user->google_id) {
-                $user->update(['google_id' => $googleId]);
+            // Selalu update google_id dan foto terbaru dari Google
+            $updateData = [];
+            if (! $user->google_id) $updateData['google_id'] = $googleId;
+            if ($foto && (! $user->foto || str_starts_with($user->foto, 'http'))) {
+                $updateData['foto'] = $foto;
             }
+            if ($updateData) $user->update($updateData);
         } else {
             // Buat user baru
             $user = User::create([

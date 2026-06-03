@@ -12,94 +12,24 @@
         }
     ],
     "paths": {
-        "/auth/register": {
-            "post": {
-                "tags": [
-                    "Auth"
-                ],
-                "summary": "Registrasi user baru",
-                "operationId": "registerUser",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "multipart/form-data": {
-                            "schema": {
-                                "required": [
-                                    "nama",
-                                    "email",
-                                    "no_hp",
-                                    "password",
-                                    "password_confirmation"
-                                ],
-                                "properties": {
-                                    "nama": {
-                                        "type": "string",
-                                        "example": "Budi Santoso"
-                                    },
-                                    "email": {
-                                        "type": "string",
-                                        "format": "email",
-                                        "example": "budi@example.com"
-                                    },
-                                    "no_hp": {
-                                        "type": "string",
-                                        "example": "081234567890"
-                                    },
-                                    "password": {
-                                        "type": "string",
-                                        "format": "password",
-                                        "example": "secret123"
-                                    },
-                                    "password_confirmation": {
-                                        "type": "string",
-                                        "format": "password",
-                                        "example": "secret123"
-                                    },
-                                    "foto": {
-                                        "type": "string",
-                                        "format": "binary"
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "201": {
-                        "description": "Registrasi berhasil"
-                    },
-                    "422": {
-                        "description": "Validasi gagal"
-                    }
-                }
-            }
-        },
         "/auth/login": {
             "post": {
                 "tags": [
                     "Auth"
                 ],
-                "summary": "Login dengan email atau nomor HP",
-                "operationId": "loginUser",
+                "summary": "Login",
+                "operationId": "312a122d438cf341a8ef1c95dda4a871",
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
-                                "required": [
-                                    "login",
-                                    "password"
-                                ],
                                 "properties": {
-                                    "login": {
-                                        "type": "string",
-                                        "example": "081234567890"
+                                    "email": {
+                                        "type": "string"
                                     },
                                     "password": {
-                                        "type": "string",
-                                        "format": "password",
-                                        "example": "secret123"
+                                        "type": "string"
                                     }
                                 },
                                 "type": "object"
@@ -109,85 +39,35 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Login berhasil"
-                    },
-                    "422": {
-                        "description": "Login gagal"
+                        "description": "Success"
                     }
                 }
             }
         },
-        "/campaigns": {
+        "/auth/register": {
             "post": {
                 "tags": [
-                    "Campaigns"
+                    "Auth"
                 ],
-                "summary": "Buat campaign baru",
-                "operationId": "createCampaign",
+                "summary": "Register",
+                "operationId": "4455547a8949ae6e4f36ef771887600d",
                 "requestBody": {
                     "required": true,
                     "content": {
-                        "multipart/form-data": {
+                        "application/json": {
                             "schema": {
-                                "required": [
-                                    "kategori_id",
-                                    "identities",
-                                    "judul",
-                                    "deskripsi",
-                                    "target_donasi",
-                                    "payment_method"
-                                ],
                                 "properties": {
-                                    "kategori_id": {
-                                        "type": "integer",
-                                        "example": 1
+                                    "nama": {
+                                        "type": "string"
                                     },
-                                    "identities": {
-                                        "type": "string",
-                                        "example": "other_people_or_community",
-                                        "enum": [
-                                            "for_yourself",
-                                            "organization_or_company",
-                                            "other_people_or_community"
-                                        ]
+                                    "email": {
+                                        "type": "string"
                                     },
-                                    "judul": {
-                                        "type": "string",
-                                        "example": "Bantu Renovasi Sekolah"
+                                    "password": {
+                                        "type": "string"
                                     },
-                                    "deskripsi": {
-                                        "type": "string",
-                                        "example": "Penggalangan dana untuk renovasi sekolah desa."
-                                    },
-                                    "target_donasi": {
-                                        "type": "integer",
-                                        "example": 50000000
-                                    },
-                                    "lokasi": {
-                                        "type": "string",
-                                        "example": "Bandung"
-                                    },
-                                    "payment_method": {
-                                        "type": "string",
-                                        "example": "bank_transfer"
-                                    },
-                                    "gambar": {
-                                        "type": "string",
-                                        "format": "binary"
-                                    },
-                                    "supporting_document": {
-                                        "type": "string",
-                                        "format": "binary"
-                                    },
-                                    "tanggal_mulai": {
-                                        "type": "string",
-                                        "format": "date",
-                                        "example": "2026-04-24"
-                                    },
-                                    "tanggal_selesai": {
-                                        "type": "string",
-                                        "format": "date",
-                                        "example": "2026-05-30"
+                                    "role": {
+                                        "type": "string"
                                     }
                                 },
                                 "type": "object"
@@ -196,14 +76,817 @@
                     }
                 },
                 "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/auth/logout": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Logout",
+                "operationId": "5a3b4d8cae6fc3223e3a219fdaf1003e",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/auth/me": {
+            "get": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Get current user",
+                "operationId": "b0634c5104ad43379db724e6ccd2a70e",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Update profile",
+                "operationId": "ee6865da8927096a86c0c4a335e2e656",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/auth/google": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Google Auth",
+                "operationId": "0844bdada3ed01f66e94d4a942739a2f",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "token": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/admin/stats": {
+            "get": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Admin Stats",
+                "operationId": "af08e826d59a180b8278009a0818dc73",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/admin/users": {
+            "get": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "List Users",
+                "operationId": "905789e72602ed758f04f877e014cc6a",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/campaigns": {
+            "get": {
+                "tags": [
+                    "Campaigns"
+                ],
+                "summary": "List all active campaigns",
+                "operationId": "e27f42610ee361b1e16786f72fa8b0c8",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Campaigns"
+                ],
+                "summary": "Create campaign",
+                "operationId": "1a4aeeba0d3301628ea5cbb9653d9552",
+                "responses": {
                     "201": {
-                        "description": "Campaign berhasil dibuat"
+                        "description": "Created"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/campaigns/categories": {
+            "get": {
+                "tags": [
+                    "Campaigns"
+                ],
+                "summary": "Get categories",
+                "operationId": "323cc6fe7379a40e0e28f44188086efc",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/campaigns/my": {
+            "get": {
+                "tags": [
+                    "Campaigns"
+                ],
+                "summary": "Get my campaigns",
+                "operationId": "af9a9d5f43aed2ae62c46321e2546200",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/campaigns/{campaign}": {
+            "get": {
+                "tags": [
+                    "Campaigns"
+                ],
+                "summary": "Get campaign details",
+                "operationId": "c8b9510d4d1c202870c5661638d0f515",
+                "parameters": [
+                    {
+                        "name": "campaign",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Campaigns"
+                ],
+                "summary": "Update campaign",
+                "operationId": "e6b06760076bc5d0e2bf01fc97bbcad5",
+                "parameters": [
+                    {
+                        "name": "campaign",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Campaigns"
+                ],
+                "summary": "Delete campaign",
+                "operationId": "fd222f3cf96f6db272f278ada8257fbd",
+                "parameters": [
+                    {
+                        "name": "campaign",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/campaigns/{campaign}/approve": {
+            "patch": {
+                "tags": [
+                    "Admin Campaigns"
+                ],
+                "summary": "Approve campaign",
+                "operationId": "3936ff321d06ebbadb76145a22da745e",
+                "parameters": [
+                    {
+                        "name": "campaign",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/campaigns/{campaign}/reject": {
+            "patch": {
+                "tags": [
+                    "Admin Campaigns"
+                ],
+                "summary": "Reject campaign",
+                "operationId": "87dbd4a130abe06b8b19400e49c8255d",
+                "parameters": [
+                    {
+                        "name": "campaign",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/donations/campaigns/{campaign}": {
+            "post": {
+                "tags": [
+                    "Donations"
+                ],
+                "summary": "Create donation (Xendit)",
+                "operationId": "41a3899c13e0623032c323ec1b178479",
+                "parameters": [
+                    {
+                        "name": "campaign",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "amount": {
+                                        "type": "integer"
+                                    },
+                                    "nama_donatur": {
+                                        "type": "string"
+                                    },
+                                    "anonymous": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/donations/confirm": {
+            "post": {
+                "tags": [
+                    "Donations"
+                ],
+                "summary": "Xendit Webhook",
+                "operationId": "00e81f9e11843fab71ed712f67683ca6",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/campaigns/{campaign}/donations": {
+            "get": {
+                "tags": [
+                    "Donations"
+                ],
+                "summary": "Get donations for a campaign",
+                "operationId": "6c747b1d0281153de94860b589d619a3",
+                "parameters": [
+                    {
+                        "name": "campaign",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/donations/fundraiser": {
+            "get": {
+                "tags": [
+                    "Donations"
+                ],
+                "summary": "Get fundraiser recent donations",
+                "operationId": "205cbc3a9886710adab238e4230864d7",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/donations/fundraiser-stats": {
+            "get": {
+                "tags": [
+                    "Donations"
+                ],
+                "summary": "Get fundraiser donation stats for chart",
+                "operationId": "9a93df348b364bbd27271f51bfdd9527",
+                "parameters": [
+                    {
+                        "name": "period",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "Minggu"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/donations/my": {
+            "get": {
+                "tags": [
+                    "Donations"
+                ],
+                "summary": "Get my donations (Donor)",
+                "operationId": "86fd34325dfc91e465202226fde62b1d",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/donations/{donation}/check": {
+            "get": {
+                "tags": [
+                    "Donations"
+                ],
+                "summary": "Manual check Xendit status",
+                "operationId": "de58f28852a953365bf2b838ef88bebf",
+                "parameters": [
+                    {
+                        "name": "donation",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/campaigns/{campaign}/updates": {
+            "get": {
+                "tags": [
+                    "Campaign Updates"
+                ],
+                "summary": "List updates",
+                "operationId": "d3d9a3a4d2129a2cef2a4b17d8b92173",
+                "parameters": [
+                    {
+                        "name": "campaign",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Campaign Updates"
+                ],
+                "summary": "Create update",
+                "operationId": "ed6f2b0599adeefc2d2372be5d650ff5",
+                "parameters": [
+                    {
+                        "name": "campaign",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/campaigns/{campaign}/updates/{update}": {
+            "put": {
+                "tags": [
+                    "Campaign Updates"
+                ],
+                "summary": "Edit update",
+                "operationId": "dccec8de65fd030d4c756e354ab20a90",
+                "parameters": [
+                    {
+                        "name": "campaign",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
                     },
-                    "401": {
-                        "description": "Belum login"
+                    {
+                        "name": "update",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Campaign Updates"
+                ],
+                "summary": "Delete update",
+                "operationId": "8a3dffd7c8f58ded5852a8ce017d39ca",
+                "parameters": [
+                    {
+                        "name": "campaign",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
                     },
-                    "422": {
-                        "description": "Validasi gagal"
+                    {
+                        "name": "update",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/campaigns/{campaign}/images": {
+            "get": {
+                "tags": [
+                    "Campaign Images"
+                ],
+                "summary": "List images",
+                "operationId": "865298e94d98193f2ab001d52fde2f31",
+                "parameters": [
+                    {
+                        "name": "campaign",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Campaign Images"
+                ],
+                "summary": "Upload image",
+                "operationId": "854359e7e64faca8fdf3ee2a43f98c93",
+                "parameters": [
+                    {
+                        "name": "campaign",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/campaigns/{campaign}/images/{image}": {
+            "delete": {
+                "tags": [
+                    "Campaign Images"
+                ],
+                "summary": "Delete image",
+                "operationId": "a2fd8759eb9f1a9c758e32197062c1c7",
+                "parameters": [
+                    {
+                        "name": "campaign",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "image",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/delete-requests": {
+            "get": {
+                "tags": [
+                    "Admin Delete Requests"
+                ],
+                "summary": "List delete requests",
+                "operationId": "b3852b3d83fa9fe5ae9f55a818e63122",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/campaigns/{campaign}/delete-request": {
+            "post": {
+                "tags": [
+                    "Fundraiser Delete Requests"
+                ],
+                "summary": "Request campaign deletion",
+                "operationId": "4017bb7346134cd9bc408f3e9883ecf8",
+                "parameters": [
+                    {
+                        "name": "campaign",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/delete-requests/{deleteRequest}/approve": {
+            "patch": {
+                "tags": [
+                    "Admin Delete Requests"
+                ],
+                "summary": "Approve delete",
+                "operationId": "c4452bfa61a7f583cc25e7ee02d380c8",
+                "parameters": [
+                    {
+                        "name": "deleteRequest",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/delete-requests/{deleteRequest}/reject": {
+            "patch": {
+                "tags": [
+                    "Admin Delete Requests"
+                ],
+                "summary": "Reject delete",
+                "operationId": "3a457a10dbac5f2e309deba4af9afe18",
+                "parameters": [
+                    {
+                        "name": "deleteRequest",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
                     }
                 },
                 "security": [
@@ -230,8 +913,36 @@
             "description": "Auth"
         },
         {
+            "name": "Admin",
+            "description": "Admin"
+        },
+        {
             "name": "Campaigns",
             "description": "Campaigns"
+        },
+        {
+            "name": "Admin Campaigns",
+            "description": "Admin Campaigns"
+        },
+        {
+            "name": "Donations",
+            "description": "Donations"
+        },
+        {
+            "name": "Campaign Updates",
+            "description": "Campaign Updates"
+        },
+        {
+            "name": "Campaign Images",
+            "description": "Campaign Images"
+        },
+        {
+            "name": "Admin Delete Requests",
+            "description": "Admin Delete Requests"
+        },
+        {
+            "name": "Fundraiser Delete Requests",
+            "description": "Fundraiser Delete Requests"
         }
     ]
 }

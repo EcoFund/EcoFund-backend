@@ -16,7 +16,9 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            UserSeeder::class,
+            // UserSeeder::class, // if there is no user seeder, let's keep it if it was there or maybe we should add KategoriSeeder here. 
+            // Wait, I will just add KategoriSeeder::class
+            KategoriSeeder::class,
         ]);
     }
 }
