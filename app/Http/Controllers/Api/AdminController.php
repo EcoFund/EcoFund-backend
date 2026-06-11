@@ -176,10 +176,106 @@ class AdminController extends Controller
      */
     public function users(Request $request)
     {
-        $users = User::select('id_user', 'nama', 'email', 'no_hp', 'foto', 'role', 'created_at')
-            ->latest()
-            ->paginate($request->input('per_page', 20));
+        $query = User::select('id_user', 'nama', 'email', 'no_hp', 'foto', 'role', 'created_at')
+            ->latest();
+
+        // Filter by role if provided
+        if ($request->filled('role')) {
+            $query->where('role', $request->input('role'));
+        }
+
+        // Search by name or email
+        if ($request->filled('search')) {
+            $search = '%' . $request->input('search') . '%';
+            $query->where(function ($q) use ($search) {
+                $q->where('nama', 'like', $search)
+                  ->orWhere('email', 'like', $search);
+            });
+        }
+
+        $users = $query->paginate($request->input('per_page', 10));
 
         return response()->json($users);
+    }
+
+    /**
+     * PATCH /api/admin/users/{id}/role
+     * Update user role.
+     */
+    public function updateRole(Request $request, $id)
+    {
+        $request->validate([
+            'role' => 'required|string|in:admin,campaigner,donatur',
+        ]);
+
+        $user = User::findOrFail($id);
+
+        if ($user->id_user === $request->user()->id_user) {
+            return response()->json(['message' => 'Anda tidak bisa mengubah role Anda sendiri.'], 422);
+        }
+
+        $user->update(['role' => $request->role]);
+
+        return response()->json([
+            'message' => 'Role user berhasil diperbarui.',
+            'user' => $user
+        ]);
+    }
+
+    /**
+     * DELETE /api/admin/users/{id}
+     * Delete user.
+     */
+    public function destroyUser(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+
+        if ($user->id_user === $request->user()->id_user) {
+            return response()->json(['message' => 'Anda tidak bisa menghapus akun Anda sendiri.'], 422);
+        }
+
+        $user->delete();
+
+        return response()->json([
+            'message' => 'User berhasil dihapus.'
+        ]);
+    }
+
+    /**
+     * GET /api/admin/users/{id}
+     * Show full fundraiser profile (including KTP info).
+     */
+    public function showUser($id)
+    {
+        $user = User::select(
+            'id_user', 'nama', 'email', 'no_hp', 'foto', 'role',
+            'nik', 'foto_ktp', 'status_verifikasi', 'catatan_verifikasi', 'created_at'
+        )->findOrFail($id);
+
+        return response()->json($user);
+    }
+
+    /**
+     * PATCH /api/admin/users/{id}/verify
+     * Update fundraiser verification status.
+     */
+    public function verifyUser(Request $request, $id)
+    {
+        $request->validate([
+            'status_verifikasi'  => 'required|in:belum_diverifikasi,terverifikasi,ditolak',
+            'catatan_verifikasi' => 'nullable|string|max:500',
+        ]);
+
+        $user = User::findOrFail($id);
+
+        $user->update([
+            'status_verifikasi'  => $request->status_verifikasi,
+            'catatan_verifikasi' => $request->catatan_verifikasi,
+        ]);
+
+        return response()->json([
+            'message' => 'Status verifikasi berhasil diperbarui.',
+            'user'    => $user,
+        ]);
     }
 }

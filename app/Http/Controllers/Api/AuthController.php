@@ -24,7 +24,9 @@ class AuthController extends Controller
             'email'                 => 'required|email|unique:users,email',
             'no_hp'                 => 'required|string|max:15',
             'password'              => 'required|string|min:8|confirmed',
-            'foto'                 => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
+            'foto'                  => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
+            'nik'                   => 'required|string|digits:16',
+            'foto_ktp'              => 'required|image|mimes:jpg,jpeg,png|max:10240',
         ]);
 
         $photoPath = null;
@@ -34,13 +36,18 @@ class AuthController extends Controller
             $photoPath = $this->generateDefaultAvatar($request->nama);
         }
 
+        $ktpPath = $request->file('foto_ktp')->store('ktp', 'public');
+
         $user = User::create([
             'nama'     => $request->nama,
             'email'    => $request->email,
             'no_hp'    => $request->no_hp,
             'password' => Hash::make($request->password),
             'role'     => 'campaigner',
-            'foto'    => $photoPath,
+            'foto'     => $photoPath,
+            'nik'      => $request->nik,
+            'foto_ktp' => $ktpPath,
+            'status_verifikasi' => 'belum_diverifikasi',
         ]);
 
         $token = $user->createToken('ecofund-token')->plainTextToken;
@@ -203,11 +210,14 @@ class AuthController extends Controller
         $request->validate([
             'nama'  => 'sometimes|string|max:255',
             'no_hp' => 'sometimes|string|max:15',
-            'foto' => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
+            'foto'  => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
         ]);
 
         if ($request->hasFile('foto')) {
-            if ($user->foto) Storage::disk('public')->delete($user->foto);
+            // Hapus foto lama jika bukan URL eksternal
+            if ($user->foto && !str_starts_with($user->foto, 'http')) {
+                Storage::disk('public')->delete($user->foto);
+            }
             $user->foto = $request->file('foto')->store('avatars', 'public');
         }
 

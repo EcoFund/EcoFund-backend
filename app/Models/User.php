@@ -25,6 +25,10 @@ class User extends Authenticatable
         'password',
         'role',
         'google_id',
+        'nik',
+        'foto_ktp',
+        'status_verifikasi',
+        'catatan_verifikasi',
     ];
 
     protected $hidden = [
@@ -38,5 +42,10 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password'          => 'hashed',
         ];
+    }
+
+    public function campaigns()
+    {
+        return $this->hasMany(Campaign::class, 'id_user', 'id_user');
     }
 }

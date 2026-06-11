@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\CampaignController;
 use App\Http\Controllers\Api\DonationController;
 use App\Http\Controllers\Api\DeleteRequestController;
+use App\Http\Controllers\Api\WithdrawalController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -63,6 +64,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('fundraiser-stats', [DonationController::class, 'fundraiserStats']);
     });
 
+    // ── Withdrawal (Pencairan Dana) ─────────────────────────────
+    Route::prefix('withdrawals')->group(function () {
+        Route::post('/', [WithdrawalController::class, 'store']);
+        Route::get('my', [WithdrawalController::class, 'myWithdrawals']);
+    });
+
 });
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -77,5 +84,14 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     Route::get('stats', [AdminController::class, 'stats']);
     Route::get('chart', [AdminController::class, 'adminChart']);
     Route::get('users', [AdminController::class, 'users']);
+    Route::get('users/{id}', [AdminController::class, 'showUser']);
+    Route::patch('users/{id}/role', [AdminController::class, 'updateRole']);
+    Route::patch('users/{id}/verify', [AdminController::class, 'verifyUser']);
+    Route::delete('users/{id}', [AdminController::class, 'destroyUser']);
+
+    // Withdrawal management
+    Route::get('withdrawals', [WithdrawalController::class, 'index']);
+    Route::patch('withdrawals/{withdrawal}/approve', [WithdrawalController::class, 'approve']);
+    Route::patch('withdrawals/{withdrawal}/reject', [WithdrawalController::class, 'reject']);
 });
 
